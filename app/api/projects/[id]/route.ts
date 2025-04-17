@@ -1,11 +1,17 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(request: Request, context: { params: { id: string } }) {
+type RouteParams = {
+  params: {
+    id: string
+  }
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const project = await prisma.project.findUnique({
       where: {
-        id: context.params.id,
+        id: params.id,
       },
     })
 
@@ -20,13 +26,13 @@ export async function GET(request: Request, context: { params: { id: string } })
   }
 }
 
-export async function PUT(request: Request, context: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const data = await request.json()
 
     const project = await prisma.project.update({
       where: {
-        id: context.params.id,
+        id: params.id,
       },
       data: {
         title: data.title,
@@ -43,11 +49,11 @@ export async function PUT(request: Request, context: { params: { id: string } })
   }
 }
 
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     await prisma.project.delete({
       where: {
-        id: context.params.id,
+        id: params.id,
       },
     })
 
