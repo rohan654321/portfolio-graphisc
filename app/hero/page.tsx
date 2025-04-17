@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, PerspectiveCamera, Environment } from "@react-three/drei"
-import { Button } from "@/components/ui/button"
+// import { Button } from "@/components/ui/button"
 import { ArrowDown } from "lucide-react"
 import * as THREE from "three" 
 
@@ -74,10 +74,10 @@ export default function Hero() {
           <p className="text-xl text-gray-600 mb-8 max-w-lg">
             Transforming ideas into visual experiences that captivate and inspire.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+          {/* <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
             <Button className="bg-teal-500 hover:bg-teal-600">View Portfolio</Button>
             <Button variant="outline">Contact Me</Button>
-          </div>
+          </div> */}
         </div>
 
         <div className="md:w-1/2 h-[400px]" style={{ transform: `translateY(${scrollY * 0.1}px)` }}>
