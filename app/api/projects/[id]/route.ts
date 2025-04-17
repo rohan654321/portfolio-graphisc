@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: { id: string } }) {
   try {
     const project = await prisma.project.findUnique({
       where: {
-        id: params.id,
+        id: context.params.id,
       },
     })
 
@@ -20,13 +20,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: { id: string } }) {
   try {
     const data = await request.json()
 
     const project = await prisma.project.update({
       where: {
-        id: params.id,
+        id: context.params.id,
       },
       data: {
         title: data.title,
@@ -43,11 +43,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
   try {
     await prisma.project.delete({
       where: {
-        id: params.id,
+        id: context.params.id,
       },
     })
 
