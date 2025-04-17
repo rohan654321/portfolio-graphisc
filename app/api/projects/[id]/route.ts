@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+  const id = context.params.id;
   try {
     const project = await prisma.project.findUnique({
       where: { id },
@@ -20,11 +20,11 @@ export async function GET(request: NextRequest, context: { params: { id: string 
 }
 
 export async function PUT(request: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+  const id = context.params.id;
   try {
     const data = await request.json();
 
-    const project = await prisma.project.update({
+    const updatedProject = await prisma.project.update({
       where: { id },
       data: {
         title: data.title,
@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       },
     });
 
-    return NextResponse.json(project);
+    return NextResponse.json(updatedProject);
   } catch (error) {
     console.error("Error updating project:", error);
     return NextResponse.json({ error: "Failed to update project" }, { status: 500 });
@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
 }
 
 export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+  const id = context.params.id;
   try {
     await prisma.project.delete({
       where: { id },
