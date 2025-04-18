@@ -36,6 +36,7 @@ export function loadProjects(): Project[] {
       category: "branding",
       image: "/placeholder.svg?height=600&width=800",
       description: "Complete brand identity design for a tech startup",
+      video: ""
     },
     {
       id: "2",
@@ -43,6 +44,7 @@ export function loadProjects(): Project[] {
       category: "packaging",
       image: "/placeholder.svg?height=600&width=800",
       description: "Eco-friendly packaging design for cosmetics brand",
+      video: ""
     },
     {
       id: "3",
@@ -50,6 +52,7 @@ export function loadProjects(): Project[] {
       category: "print",
       image: "/placeholder.svg?height=600&width=800",
       description: "Magazine layout and editorial design",
+      video: ""
     },
     {
       id: "4",
@@ -57,6 +60,7 @@ export function loadProjects(): Project[] {
       category: "ui",
       image: "/placeholder.svg?height=600&width=800",
       description: "User interface design for fitness tracking app",
+      video: ""
     },
   ]
 
