@@ -4,6 +4,7 @@ export type Project = {
   category: string
   description: string
   image: string
+  video: string
 }
 
   export interface AdminUser {

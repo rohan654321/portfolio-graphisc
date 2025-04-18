@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, LogOut } from "lucide-react"
+import { Plus, Edit, Trash2, LogOut, Video, Music } from "lucide-react"
 import { toast } from "sonner"
 import { ProjectDialog } from "@/components/project-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
@@ -50,7 +50,7 @@ function AdminDashboardContent() {
     try {
       await deleteProject(currentProject.id)
       toast("Project deleted successfully")
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast("Failed to delete project")
     }
@@ -75,7 +75,7 @@ function AdminDashboardContent() {
         toast("Project created successfully")
       }
       setIsProjectDialogOpen(false)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast("Failed to save project")
     }
@@ -85,6 +85,18 @@ function AdminDashboardContent() {
     activeCategory === "all" ? projects : projects.filter((project) => project.category === activeCategory)
 
   const categories = ["all", ...Array.from(new Set(projects.map((p) => p.category)))]
+
+  // Helper function to determine media type
+  const getMediaType = (url: string | undefined) => {
+    if (!url) return null
+
+    if (url.match(/\.(mp4|webm|mov|ogg)$/i)) {
+      return "video"
+    } else if (url.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+      return "audio"
+    }
+    return "image"
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -125,42 +137,81 @@ function AdminDashboardContent() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProjects.map((project) => (
-                  <Card key={project.id} className="overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="relative aspect-[4/3]">
-                        <Image
-                          src={project.image || "/placeholder.svg?height=600&width=800"}
-                          alt={project.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-bold text-lg">{project.title}</h3>
-                            <p className="text-sm text-gray-500 capitalize">{project.category}</p>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="icon" onClick={() => handleEditProject(project)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="text-red-500 hover:text-red-700"
-                              onClick={() => handleDeleteClick(project)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                {filteredProjects.map((project) => {
+                  const mediaType = project.video ? getMediaType(project.video) : "image"
+
+                  return (
+                    <Card key={project.id} className="overflow-hidden">
+                      <CardContent className="p-0">
+                        <div className="relative aspect-[4/3]">
+                          {mediaType === "video" && (
+                            <div className="w-full h-full">
+                              <video
+                                src={project.video}
+                                className="w-full h-full object-cover"
+                                controls
+                                onError={(e) => {
+                                  console.error("Video error:", e)
+                                  toast("Error loading video")
+                                }}
+                              />
+                              <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-xs flex items-center">
+                                <Video className="h-3 w-3 mr-1" /> Video
+                              </div>
+                            </div>
+                          )}
+                          {mediaType === "audio" && (
+                            <div className="w-full h-full bg-gray-200 flex flex-col items-center justify-center p-4">
+                              <Music className="h-12 w-12 text-gray-500 mb-4" />
+                              <audio
+                                src={project.video}
+                                className="w-full"
+                                controls
+                                onError={(e) => {
+                                  console.error("Audio error:", e)
+                                  toast("Error loading audio")
+                                }}
+                              />
+                              <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-xs flex items-center">
+                                <Music className="h-3 w-3 mr-1" /> Audio
+                              </div>
+                            </div>
+                          )}
+                          {mediaType === "image" && (
+                            <Image
+                              src={project.image || "/placeholder.svg?height=600&width=800"}
+                              alt={project.title}
+                              fill
+                              className="object-cover"
+                            />
+                          )}
                         </div>
-                        <p className="mt-2 text-sm text-gray-600 line-clamp-2">{project.description}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-bold text-lg">{project.title}</h3>
+                              <p className="text-sm text-gray-500 capitalize">{project.category}</p>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button variant="outline" size="icon" onClick={() => handleEditProject(project)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="text-red-500 hover:text-red-700"
+                                onClick={() => handleDeleteClick(project)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="mt-2 text-sm text-gray-600 line-clamp-2">{project.description}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             )}
           </TabsContent>

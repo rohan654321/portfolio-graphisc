@@ -1,21 +1,15 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
+import { X, ImageIcon, Video, Music } from "lucide-react"
+import Image from "next/image"
 import type { Project } from "@/lib/types"
 
 interface ProjectDialogProps {
@@ -26,112 +20,264 @@ interface ProjectDialogProps {
 }
 
 export function ProjectDialog({ open, onOpenChange, project, onSave }: ProjectDialogProps) {
-  const [formData, setFormData] = useState<Project>({
-    id: project?.id || undefined,
-    title: project?.title || "",
-    category: project?.category || "",
-    description: project?.description || "",
-    image: project?.image || "/placeholder.svg?height=600&width=800",
-  })
+  const [title, setTitle] = useState(project?.title || "")
+  const [category, setCategory] = useState(project?.category || "")
+  const [description, setDescription] = useState(project?.description || "")
+  const [image, setImage] = useState(project?.image || "")
+  const [video, setVideo] = useState(project?.video || "")
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadType, setUploadType] = useState<"image" | "video" | "audio">("image")
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
-  const [isLoading, setIsLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
 
-  const handleChange = (field: keyof Project, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
+  useEffect(() => {
+    if (open) {
+      setTitle(project?.title || "")
+      setCategory(project?.category || "")
+      setDescription(project?.description || "")
+      setImage(project?.image || "")
+      setVideo(project?.video || "")
+      setUploadError(null)
+    }
+  }, [open, project])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const isVideo = file.type.startsWith("video/")
+    const isImage = file.type.startsWith("image/")
+    const isAudio = file.type.startsWith("audio/")
+
+    if (!isVideo && !isImage && !isAudio) {
+      toast("Please upload a valid image, video, or audio file")
+      return
+    }
+
+    setIsUploading(true)
+    setUploadError(null)
 
     try {
-      // In a real app, you would upload the image to a storage service here
-      // For this example, we'll just use the provided image URL
+      const formData = new FormData()
+      formData.append("file", file)
 
-      // Call the onSave callback with the form data
-      onSave(formData)
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Upload failed")
+      }
+
+      const data = await response.json()
+
+      if (isImage) {
+        setImage(data.url)
+        setVideo("")
+      } else if (isVideo || isAudio) {
+        setVideo(data.url)
+        setImage("")
+      }
+
+      toast("File uploaded successfully")
     } catch (error) {
-      console.error("Error saving project:", error)
+      setUploadError(error instanceof Error ? error.message : "Upload failed")
+      toast("Failed to upload file: " + (error instanceof Error ? error.message : "Unknown error"))
     } finally {
-      setIsLoading(false)
+      setIsUploading(false)
     }
   }
 
+  const handleSave = () => {
+    if (!title || !category || !description) {
+      toast("Please fill in all required fields")
+      return
+    }
+
+    onSave({
+      id: project?.id,
+      title,
+      category,
+      description,
+      image,
+      video,
+    })
+  }
+
+  const triggerFileUpload = (type: "image" | "video" | "audio") => {
+    setUploadType(type)
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = type === "image" ? "image/*" : type === "video" ? "video/*" : "audio/*"
+      fileInputRef.current.click()
+    }
+  }
+
+  const removeMedia = () => {
+    setImage("")
+    setVideo("")
+  }
+
+  const isVideoFile =
+    video && (video.endsWith(".mp4") || video.endsWith(".webm") || video.endsWith(".ogg") || video.endsWith(".mov"))
+
+  const isAudioFile =
+    video && (video.endsWith(".mp3") || video.endsWith(".wav") || video.endsWith(".ogg") || video.endsWith(".m4a"))
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{project ? "Edit Project" : "Add New Project"}</DialogTitle>
-            <DialogDescription>
-              {project
-                ? "Update the details of your existing project."
-                : "Fill in the details to add a new project to your portfolio."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleChange("title", e.target.value)}
-                placeholder="Project title"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value) => handleChange("category", value)} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="branding">Branding</SelectItem>
-                  <SelectItem value="ui">UI/UX Design</SelectItem>
-                  <SelectItem value="illustration">Illustration</SelectItem>
-                  <SelectItem value="photography">Photography</SelectItem>
-                  <SelectItem value="web">Web Design</SelectItem>
-                  <SelectItem value="motion">Motion Graphics</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange("description", e.target.value)}
-                placeholder="Project description"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="image">Image URL</Label>
-              <Input
-                id="image"
-                value={formData.image}
-                onChange={(e) => handleChange("image", e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                required
-              />
-              <p className="text-xs text-gray-500">
-                For a real app, you would upload an image. For this demo, you can use a URL or the placeholder.
-              </p>
-            </div>
+      <DialogContent className="sm:max-w-[600px] p-0 max-h-[90vh] flex flex-col">
+        <DialogHeader className="px-6 pt-6">
+          <DialogTitle>{project ? "Edit Project" : "Add New Project"}</DialogTitle>
+        </DialogHeader>
+
+        {/* Scrollable content */}
+        <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
+          <div className="grid gap-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Project title"
+              required
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Project"}
-            </Button>
-          </DialogFooter>
-        </form>
+
+          <div className="grid gap-2">
+            <Label htmlFor="category">Category *</Label>
+            <Input
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g. Web Design, Branding"
+              required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description *</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Project description"
+              required
+              rows={4}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Project Media</Label>
+            {image ? (
+              <div className="relative aspect-[4/3] bg-gray-100 rounded-md overflow-hidden">
+                <Image src={image} alt="Project thumbnail" fill className="object-cover" />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                  onClick={removeMedia}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : isVideoFile ? (
+              <div className="relative aspect-[4/3] bg-gray-100 rounded-md overflow-hidden">
+                <video
+                  ref={videoRef}
+                  src={video}
+                  className="w-full h-full object-cover"
+                  controls
+                  onError={() => setUploadError("Error loading video. Please try again.")}
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                  onClick={removeMedia}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : isAudioFile ? (
+              <div className="relative bg-gray-100 rounded-md p-4">
+                <audio
+                  ref={audioRef}
+                  src={video}
+                  className="w-full"
+                  controls
+                  onError={() => setUploadError("Error loading audio. Please try again.")}
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                  onClick={removeMedia}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-32 border-dashed"
+                  onClick={() => triggerFileUpload("image")}
+                  disabled={isUploading}
+                >
+                  <ImageIcon className="mr-2 h-5 w-5" />
+                  {isUploading && uploadType === "image" ? "Uploading..." : "Upload Image"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-32 border-dashed"
+                  onClick={() => triggerFileUpload("video")}
+                  disabled={isUploading}
+                >
+                  <Video className="mr-2 h-5 w-5" />
+                  {isUploading && uploadType === "video" ? "Uploading..." : "Upload Video"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-32 border-dashed"
+                  onClick={() => triggerFileUpload("audio")}
+                  disabled={isUploading}
+                >
+                  <Music className="mr-2 h-5 w-5" />
+                  {isUploading && uploadType === "audio" ? "Uploading..." : "Upload Audio"}
+                </Button>
+              </div>
+            )}
+
+            {uploadError && <p className="text-sm text-red-500 mt-1">{uploadError}</p>}
+          </div>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileChange}
+            accept={uploadType === "image" ? "image/*" : uploadType === "video" ? "video/*" : "audio/*"}
+          />
+        </div>
+
+        {/* Fixed footer */}
+        <div className="border-t px-6 py-4 flex justify-end gap-2 bg-white sticky bottom-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            className="bg-teal-500 hover:bg-teal-600"
+            disabled={isUploading}
+          >
+            Save Project
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

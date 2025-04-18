@@ -20,13 +20,22 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
+    // Create a create object with only the fields that exist in the schema
+    const createData = {
+      title: data.title,
+      category: data.category,
+      description: data.description,
+      image: data.image,
+    }
+
+    // Only add video field if it exists in the data
+    if ("video" in data) {
+      // @ts-expect-error - We know video exists in our schema but TS doesn't know yet
+      createData.video = data.video
+    }
+
     const project = await prisma.project.create({
-      data: {
-        title: data.title,
-        category: data.category,
-        description: data.description,
-        image: data.image,
-      },
+      data: createData,
     })
 
     return NextResponse.json(project)
